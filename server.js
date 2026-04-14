@@ -18,9 +18,8 @@ app.use((req, res, next) => {
 
 // ── AGENT CARD (A2A Discovery) ────────────────────────────────────────────────
 // ServiceNow reads this to understand what the agent can do
-const AGENT_BASE_URL = process.env.PROJECT_DOMAIN
-  ? `https://${process.env.PROJECT_DOMAIN}.glitch.me`
-  : 'https://your-project.glitch.me';
+const AGENT_BASE_URL = 'https://a2a-production-8589.up.railway.app';
+
 
 const agentCard = {
   name: "Dell Technical Support Agent",
