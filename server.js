@@ -118,81 +118,94 @@ function searchDell(query) {
 // Build structured Dell support response using known URL patterns
 function buildDellResponse(query) {
   const q = query.toLowerCase();
-
+ 
   // Detect intent
   const isDriver = /driver|bios|firmware|update|download/i.test(q);
   const isError = /error|code|\d{4}-\d{4}|blink|beep|amber|white/i.test(q);
   const isManual = /manual|guide|replace|install|spec|memory|ram|battery|disassembl/i.test(q);
-  const isWarranty = /warrant|service tag|support/i.test(q);
-
+ 
   // Extract model if present
   const modelMatch = q.match(/(latitude|optiplex|xps|precision|inspiron|vostro|poweredge|alienware|g\d+)\s*([\w\d\s]*?)(?:\s|$)/i);
   const model = modelMatch ? modelMatch[0].trim() : null;
   const encodedQuery = encodeURIComponent(query);
   const encodedModel = model ? encodeURIComponent(model) : encodedQuery;
-
-  let response = `## Dell Technical Support Results\n**Query:** ${query}\n\n`;
-
+  const modelLabel = model ? model.charAt(0).toUpperCase() + model.slice(1) : 'this Dell device';
+ 
+  let response = `DELL SUPPORT FINDINGS — ${query}\n\n`;
+ 
   if (isError) {
-    response += `### 🔧 Troubleshooting\n`;
-    response += `Based on your description, here are the relevant Dell resources:\n\n`;
-    response += `**Dell Diagnostic Error Codes Reference:**\n`;
-    response += `→ https://www.dell.com/support/kbdoc/en-us/000125347/dell-desktop-error-codes\n\n`;
-    response += `**LED/Blink Code Diagnostic Guide:**\n`;
-    response += `→ https://www.dell.com/support/kbdoc/en-us/000132093/what-are-the-blinking-led-codes-on-a-dell-laptop\n\n`;
-    if (model) {
-      response += `**Troubleshoot ${model} specifically:**\n`;
-      response += `→ https://www.dell.com/support/home/en-us/product-support/product/${encodedModel}/diagnose\n\n`;
-    }
-    response += `**Run SupportAssist Diagnostics (recommended):**\n`;
-    response += `→ https://www.dell.com/support/home/en-us/supportassist\n`;
-  } else if (isDriver) {
-    response += `### ⬇️ Drivers & Downloads\n`;
-    if (model) {
-      response += `**Drivers for ${model}:**\n`;
-      response += `→ https://www.dell.com/support/home/en-us/product-support/product/${encodedModel}/drivers\n\n`;
-      response += `**BIOS Updates for ${model}:**\n`;
-      response += `→ https://www.dell.com/support/home/en-us/product-support/product/${encodedModel}/drivers?drivertype=bios\n\n`;
+    response += `RECOMMENDED ACTIONS:\n`;
+    response += `1. Run the built-in Dell SupportAssist diagnostics tool first — this will identify the specific failing component automatically.\n`;
+    response += `2. Check the LED/blink pattern against Dell's diagnostic code guide — each pattern maps to a specific hardware fault (RAM, GPU, CPU, or storage).\n`;
+    if (q.includes('amber') || q.includes('blink')) {
+      response += `3. Amber blink codes on Dell laptops typically indicate a hardware component failure before POST. Common causes: failed RAM stick, GPU fault, or battery/power issue. Try reseating RAM first.\n`;
+    } else if (q.includes('2000')) {
+      response += `3. Error 2000-xxxx codes are storage diagnostic failures. The hard drive or SSD is likely failing. Back up data immediately and run a full disk diagnostic from SupportAssist.\n`;
+    } else if (q.includes('kernel') || q.includes('blue screen') || q.includes('bsod')) {
+      response += `3. KERNEL_SECURITY_CHECK_FAILURE is most commonly caused by outdated or corrupt drivers, especially after a Windows Update. Boot into Safe Mode and roll back recent driver updates, or run the Dell driver update tool.\n`;
     } else {
-      response += `**Search all drivers by model:**\n`;
-      response += `→ https://www.dell.com/support/home/en-us/drivers\n\n`;
-      response += `**Driver search for: ${query}**\n`;
-      response += `→ https://www.dell.com/support/search/en-us#q=${encodedQuery}&t=Downloads\n\n`;
+      response += `3. Cross-reference the specific error code with Dell's diagnostic reference to identify the affected component before ordering parts.\n`;
     }
-    response += `**Auto-detect drivers with SupportAssist:**\n`;
-    response += `→ https://www.dell.com/support/home/en-us/supportassist\n`;
+    response += `4. If the device is under warranty, Dell can dispatch a technician or send a replacement part at no cost.\n`;
+    response += `\nREFERENCE LINKS:\n`;
+    response += `- Diagnostic error codes: https://www.dell.com/support/kbdoc/en-us/000125347/dell-desktop-error-codes\n`;
+    response += `- LED/blink code guide: https://www.dell.com/support/kbdoc/en-us/000132093/what-are-the-blinking-led-codes-on-a-dell-laptop\n`;
+    if (model) response += `- Run diagnostics for ${modelLabel}: https://www.dell.com/support/home/en-us/product-support/product/${encodedModel}/diagnose\n`;
+    response += `- SupportAssist download: https://www.dell.com/support/home/en-us/supportassist\n`;
+ 
+  } else if (isDriver) {
+    response += `RECOMMENDED ACTIONS:\n`;
+    response += `1. Download and run Dell SupportAssist — it will auto-detect the device and show all missing or outdated drivers in one view.\n`;
+    if (model) {
+      response += `2. For a manual update, go directly to the ${modelLabel} driver page and filter by BIOS or the specific driver category needed.\n`;
+      response += `3. Always update BIOS last, after all other drivers are current. Ensure the device is plugged into AC power before starting a BIOS update.\n`;
+    } else {
+      response += `2. If SupportAssist is not available, search drivers by service tag (found on the bottom of the device) for exact model match.\n`;
+      response += `3. Always update BIOS last. Ensure the device is plugged into AC power before starting a BIOS update.\n`;
+    }
+    response += `4. Restart the device after each driver update before installing the next.\n`;
+    response += `\nREFERENCE LINKS:\n`;
+    if (model) {
+      response += `- ${modelLabel} drivers page: https://www.dell.com/support/home/en-us/product-support/product/${encodedModel}/drivers\n`;
+      response += `- ${modelLabel} BIOS updates: https://www.dell.com/support/home/en-us/product-support/product/${encodedModel}/drivers?drivertype=bios\n`;
+    }
+    response += `- SupportAssist (auto-detect): https://www.dell.com/support/home/en-us/supportassist\n`;
+ 
   } else if (isManual) {
-    response += `### 📖 Service Documentation\n`;
+    response += `RECOMMENDED ACTIONS:\n`;
     if (model) {
-      response += `**Service Manual for ${model}:**\n`;
-      response += `→ https://www.dell.com/support/home/en-us/product-support/product/${encodedModel}/manuals\n\n`;
-      response += `**Parts & Compatibility for ${model}:**\n`;
-      response += `→ https://www.dell.com/support/home/en-us/product-support/product/${encodedModel}/upgrade\n\n`;
+      response += `1. Download the official Dell service manual for the ${modelLabel} before starting any hardware work — it includes torque specs, cable routing, and part removal order.\n`;
+      response += `2. Check the parts compatibility page to verify the correct replacement part number before ordering.\n`;
+    } else {
+      response += `1. Locate the service manual using the device service tag (label on the bottom of the device) for an exact model match.\n`;
+      response += `2. Verify replacement part numbers against the Dell parts compatibility list before ordering.\n`;
     }
-    response += `**Dell Manuals Library (all models):**\n`;
-    response += `→ https://www.dell.com/support/home/en-us/product-support/manuals\n\n`;
-    response += `**Knowledge Base Article Search:**\n`;
-    response += `→ https://www.dell.com/support/search/en-us#q=${encodedQuery}&t=KnowledgeArticles\n`;
+    response += `3. Dell service manuals are available as free PDFs — no account required.\n`;
+    response += `\nREFERENCE LINKS:\n`;
+    if (model) {
+      response += `- ${modelLabel} service manual: https://www.dell.com/support/home/en-us/product-support/product/${encodedModel}/manuals\n`;
+      response += `- ${modelLabel} parts & compatibility: https://www.dell.com/support/home/en-us/product-support/product/${encodedModel}/upgrade\n`;
+    }
+    response += `- Dell manuals library: https://www.dell.com/support/home/en-us/product-support/manuals\n`;
+ 
   } else {
-    // General support search
-    response += `### 🔍 Support Results\n`;
-    response += `**Knowledge Base Articles:**\n`;
-    response += `→ https://www.dell.com/support/search/en-us#q=${encodedQuery}&t=KnowledgeArticles\n\n`;
+    response += `RECOMMENDED ACTIONS:\n`;
+    response += `1. Search Dell's knowledge base for articles matching this issue — filter by product model for most relevant results.\n`;
     if (model) {
-      response += `**Full Support Page for ${model}:**\n`;
-      response += `→ https://www.dell.com/support/home/en-us/product-support/product/${encodedModel}/overview\n\n`;
-      response += `**Manuals & Guides:**\n`;
-      response += `→ https://www.dell.com/support/home/en-us/product-support/product/${encodedModel}/manuals\n\n`;
-      response += `**Drivers & Downloads:**\n`;
-      response += `→ https://www.dell.com/support/home/en-us/product-support/product/${encodedModel}/drivers\n\n`;
+      response += `2. Visit the ${modelLabel} support page for a full overview of available documentation, drivers, and diagnostics.\n`;
     }
-    response += `**Dell Community Forums:**\n`;
-    response += `→ https://www.dell.com/community/en/conversations/search?q=${encodedQuery}\n\n`;
-    response += `**Dell TechDirect (enterprise portal):**\n`;
-    response += `→ https://techdirect.dell.com\n`;
+    response += `3. If the issue is not resolved by documentation, run SupportAssist diagnostics to get a hardware health report.\n`;
+    response += `4. For warranty support or hardware replacement, contact Dell Support with the device service tag ready.\n`;
+    response += `\nREFERENCE LINKS:\n`;
+    response += `- Knowledge base search: https://www.dell.com/support/search/en-us#q=${encodedQuery}&t=KnowledgeArticles\n`;
+    if (model) {
+      response += `- ${modelLabel} support overview: https://www.dell.com/support/home/en-us/product-support/product/${encodedModel}/overview\n`;
+      response += `- ${modelLabel} drivers: https://www.dell.com/support/home/en-us/product-support/product/${encodedModel}/drivers\n`;
+    }
+    response += `- Dell community forums: https://www.dell.com/community/en/conversations/search?q=${encodedQuery}\n`;
   }
-
-  response += `\n---\n*Results sourced from Dell's public support library. For hardware under warranty, contact Dell Support: 1-800-624-9896*`;
+ 
+  response += `\nFor warranty service or hardware repair, contact Dell Support: 1-800-624-9896 (have service tag ready)`;
   return response;
 }
 
